@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
 function parseNumbers(numsStr) {
@@ -50,6 +52,34 @@ router.get('/', (req, res, next) => {
         }
 
         return res.json({ operation, value: result });
+    } catch (err) {
+        return res.status(400).json({ error: err.message });
+    }
+});
+
+router.get('/all', (req, res, next) => {
+    const numsStr = req.query.nums;
+    const save = req.query.save === 'true';
+
+    if (!numsStr) {
+        return res.status(400).json({ error: 'nums are required.' });
+    }
+
+    try {
+        let nums = parseNumbers(numsStr);
+        let mean = calculateMean(nums);
+        let median = calculateMedian(nums);
+        let mode = calculateMode(nums);
+
+        let response = { operation: 'all', mean, median, mode };
+
+        if (save) {
+            let timestamp = new Date().toISOString();
+            let dataToSave = { ...response, timestamp };
+            fs.writeFileSync(path.join(__dirname, '../results.json'), JSON.stringify(dataToSave, null, 2));
+        }
+
+        return res.json(response);
     } catch (err) {
         return res.status(400).json({ error: err.message });
     }
